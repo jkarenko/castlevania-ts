@@ -27,7 +27,8 @@
         "npm-run-all": "^4.1.5",
         "terser": "^5.31.0",
         "typescript": "^5.4.5",
-        "vite": "^5.3.1"
+        "vite": "^5.3.1",
+        "vite-plugin-restart": "^0.4.2"
     },
     "dependencies": {
         "phaser": "^3.88.2"

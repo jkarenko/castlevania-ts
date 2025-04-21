@@ -10,6 +10,7 @@ export class PlayerTestScene extends Phaser.Scene {
   private leftKey?: Phaser.Input.Keyboard.Key;
   private rightKey?: Phaser.Input.Keyboard.Key;
   private debugText?: Phaser.GameObjects.Text;
+  private jumpWasDown: boolean = false;
 
   constructor() {
     super("PlayerTestScene");
@@ -20,6 +21,9 @@ export class PlayerTestScene extends Phaser.Scene {
   create() {
     // Create a background
     this.add.rectangle(0, 0, this.cameras.main.width, this.cameras.main.height, 0x87ceeb).setOrigin(0);
+
+    // Turn off Phaser's default gravity - we'll handle it manually
+    this.physics.world.gravity.y = 0;
 
     // Create platforms first so player can be positioned on them
     const platforms = this.createPlatforms();
@@ -68,8 +72,14 @@ export class PlayerTestScene extends Phaser.Scene {
       .rectangle(this.cameras.main.width * 0.6, this.cameras.main.height - 250, 200, 20, 0x00ff00)
       .setOrigin(0);
 
+    // Add a higher platform to test double jump
+    const platform3 = this.add
+      .rectangle(this.cameras.main.width * 0.4, this.cameras.main.height - 350, 200, 20, 0x00ff00)
+      .setOrigin(0);
+
     platforms.add(platform1);
     platforms.add(platform2);
+    platforms.add(platform3);
 
     return platforms;
   }
@@ -108,11 +118,23 @@ export class PlayerTestScene extends Phaser.Scene {
       color: "#000000",
     });
 
+    // Add jump state debug info
+    const jumpStateText = this.add.text(10, 130, "Jump State: ", {
+      font: "16px Arial",
+      color: "#000000",
+    });
+
+    // Add gravity debug info
+    const gravityText = this.add.text(10, 150, "Gravity: ", {
+      font: "16px Arial",
+      color: "#000000",
+    });
+
     // Helper text
     const controlsText = this.add.text(
       10,
-      this.cameras.main.height - 120,
-      "Controls:\nA/D: Move left/right\nSPACE: Jump (double-tap for double jump)\nS: Duck\nMouse: Move to aim (not implemented yet)\nClick: Attack",
+      this.cameras.main.height - 160,
+      "Controls:\nA/D: Move left/right\nSPACE: Jump (hold for higher, release for shorter jump)\nDouble-tap SPACE for double jump\nS: Duck\nMouse: Move to aim (not implemented yet)\nClick: Attack",
       {
         font: "14px Arial",
         color: "#000000",
@@ -143,6 +165,14 @@ export class PlayerTestScene extends Phaser.Scene {
               this.player.body.width
             }, H=${this.player.body.height}`
           );
+
+          // Add jump state info
+          const jumpButtonHeld = (this.player as any).isJumpButtonHeld ? "Yes" : "No";
+          const jumpCut = (this.player as any).isJumpCut ? "Yes" : "No";
+          jumpStateText.setText(`Jump State: Button Held=${jumpButtonHeld}, Jump Cut=${jumpCut}`);
+
+          // Add gravity info
+          gravityText.setText(`Gravity: ${Math.round((this.player as any).currentGravity)}`);
         }
       }
     });
@@ -152,7 +182,7 @@ export class PlayerTestScene extends Phaser.Scene {
   }
 
   update(time: number, delta: number) {
-    if (!this.player) {
+    if (!this.player || !this.jumpKey) {
       return;
     }
 
@@ -165,10 +195,20 @@ export class PlayerTestScene extends Phaser.Scene {
       this.player.stopWalking();
     }
 
-    // Handle jumping with SPACE (as per rule set)
-    if (Phaser.Input.Keyboard.JustDown(this.jumpKey!)) {
+    // Handle variable jump mechanics
+    const jumpIsDown = this.jumpKey.isDown;
+
+    // Jump button was just pressed
+    if (jumpIsDown && !this.jumpWasDown) {
       this.player.jump();
     }
+    // Jump button was just released
+    else if (!jumpIsDown && this.jumpWasDown) {
+      this.player.jumpRelease();
+    }
+
+    // Remember jump button state for next frame
+    this.jumpWasDown = jumpIsDown;
 
     // Handle attack with mouse button (as per rule set)
     if (this.input.activePointer.leftButtonDown() && !this.input.activePointer.leftButtonReleased()) {

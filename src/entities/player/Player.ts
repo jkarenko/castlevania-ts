@@ -128,11 +128,23 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
       case AnimKeys.Attack:
         this.isAttacking = false;
         if (this.currentState === PlayerState.ATTACKING) {
-          this.setPlayerState(PlayerState.IDLE);
+          // Determine the correct state to return to after attacking
+          if (this.body?.touching.down) {
+            // On the ground
+            if (Math.abs(this.body.velocity.x) > 10) {
+              this.setPlayerState(PlayerState.WALKING);
+            } else {
+              this.setPlayerState(PlayerState.IDLE);
+            }
+          } else {
+            // In the air
+            this.setPlayerState(PlayerState.JUMPING);
+          }
         }
         break;
       case AnimKeys.Jump:
-        if (this.currentState === PlayerState.JUMPING && this.body?.touching.down) {
+        // If the jump animation finishes while on the ground, go to idle
+        if (this.body?.touching.down && this.currentState === PlayerState.JUMPING) {
           this.setPlayerState(PlayerState.IDLE);
         }
         break;
@@ -482,7 +494,8 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
       Math.abs(this.body.velocity.y) > 50 && // increased threshold for more stable state changes
       this.currentState !== PlayerState.JUMPING && // not already in jump state
       this.currentState !== PlayerState.HURT && // not hurt
-      this.currentState !== PlayerState.DEAD // not dead
+      this.currentState !== PlayerState.DEAD && // not dead
+      this.currentState !== PlayerState.ATTACKING // <<< ADDED: Don't switch if attacking
     ) {
       this.setPlayerState(PlayerState.JUMPING);
       // Don't enable double jump when entering jump state from falling

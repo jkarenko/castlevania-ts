@@ -1,8 +1,9 @@
-### Castlevania‑Style Metroidvania – Project Rules & Specs  
+# Castlevania‑Style Metroidvania – Project Rules & Specs  
 
 ---
 
-#### 1. Core Concept  
+## 1. Core Concept  
+
 | Item | Spec |
 |------|------|
 | **Genre** | 2‑D side‑scrolling *Metroidvania* (exploration, back‑tracking, statically‑scrolling rooms). |
@@ -11,7 +12,7 @@
 
 ---
 
-#### 2. Player Abilities & Control Map  
+## 2. Player Abilities & Control Map  
 
 | Action | Keyboard | Game‑pad | Touch |
 |--------|----------|----------|-------|
@@ -24,13 +25,14 @@
 | **Pause / Inventory** | Esc | Start | HUD button |
 
 Movement quirks  
+
 * Jump has **modest mid‑air steering** (30 % of ground acceleration).  
 * Ducking halves collider height; if standing in front of a “hidable” object, player *becomes untargetable* while ducked.  
 * Attacks inherit aim angle **at the moment of firing**; player can move while charging.  
 
 ---
 
-#### 3. Combat Rules  
+## 3. Combat Rules  
 
 * **Weapons**  
   * **Projectiles** (arrows, bolts) – pooled via `rexBullet`; speed 400 px/s; recycle on collision or after 2 s.  
@@ -41,7 +43,7 @@ Movement quirks
 
 ---
 
-#### 4. Enemy Archetypes  
+## 4. Enemy Archetypes  
 
 | Type | Behaviour | Pathfinding | Sample Plugin |
 |------|-----------|-------------|---------------|
@@ -53,7 +55,7 @@ All enemies use Arcade Physics AABB bodies.
 
 ---
 
-#### 5. Level & World Structure  
+## 5. Level & World Structure  
 
 * **Room‑based scrolling** (camera clamps to room bounds; transition with `rexTransition` curtain).  
 * **Non‑linear castle**: keys, abilities or items open shortcuts; back‑tracking encouraged.  
@@ -62,7 +64,7 @@ All enemies use Arcade Physics AABB bodies.
 
 ---
 
-#### 6. Technical Stack  
+## 6. Technical Stack  
 
 | Layer | Choice | Notes |
 |-------|--------|-------|
@@ -76,7 +78,7 @@ All enemies use Arcade Physics AABB bodies.
 
 ---
 
-#### 7. Code Architecture Conventions  
+## 7. Code Architecture Conventions  
 
 ```ts
 // folder layout
@@ -98,7 +100,7 @@ const enum Depth { BG=-10, Sprites=0, HUD=100 }
 
 ---
 
-#### 8. Asset Rules  
+## 8. Asset Rules  
 
 * **Sprite‑sheet** per entity; exported **PNG + JSON‑array**.  
 * Tags map to animations (`idle`, `walk`, `attack`, `duck`, etc.).  
@@ -107,7 +109,7 @@ const enum Depth { BG=-10, Sprites=0, HUD=100 }
 
 ---
 
-#### 9. Performance & QA Targets  
+## 9. Performance & QA Targets  
 
 * < 4 ms JS update on desktop, < 10 ms on iPhone 11.  
 * No single texture > 2048 × 2048.  
@@ -116,7 +118,7 @@ const enum Depth { BG=-10, Sprites=0, HUD=100 }
 
 ---
 
-#### 10. Stretch Goals (do NOT implement unless scope expanded)  
+## 10. Stretch Goals (do NOT implement unless scope expanded)  
 
 * Parallax backgrounds using multi‑cam.  
 * Equipment system (gear stats).  

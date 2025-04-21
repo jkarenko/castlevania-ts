@@ -92,6 +92,12 @@ src/
   entities/enemies/<Type>.ts
   systems/bullets.ts
   data/levels/<room>.json      // Tiled export
+assets/sprites/player/player.aseprite
+assets/sprites/player/player.png
+assets/sprites/player/player.json
+assets/sprites/<other_entities>/<entity>.aseprite
+assets/sprites/<other_entities>/<entity>.png
+assets/sprites/<other_entities>/<entity>.json
 
 // naming
 enum AnimKeys { Idle='idle', Walk='walk', Attack='attack' }

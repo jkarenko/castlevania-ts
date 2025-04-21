@@ -4,6 +4,12 @@ import Phaser from "phaser";
 const PLAYER_WIDTH = 32;
 const PLAYER_HEIGHT = 64;
 
+// Physics constants
+const GROUND_ACCELERATION = 1500; // Acceleration on ground
+const AIR_CONTROL_FACTOR = 0.3; // Mid-air steering (30% of ground acceleration)
+const JUMP_VELOCITY = -330;
+const MAX_SPEED = 160;
+
 // Animation keys enum based on player.json tags
 export enum AnimKeys {
   Idle = "idle",
@@ -41,6 +47,9 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
   private isAttacking: boolean = false;
   private isDucking: boolean = false;
   private isTalking: boolean = false;
+  private canDoubleJump: boolean = true;
+  private originalBodyHeight: number = PLAYER_HEIGHT;
+  private moveDirection: "left" | "right" | "none" = "none";
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     // Assuming the texture key 'player' is loaded in a Preloader scene
@@ -50,14 +59,28 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     scene.add.existing(this);
     scene.physics.add.existing(this);
 
-    // Set physics body size
-    this.body?.setSize(PLAYER_WIDTH, PLAYER_HEIGHT);
+    // Set origin to bottom center so feet touch the ground
+    this.setOrigin(0.5, 1);
+
+    // Set physics body size and alignment
+    if (this.body) {
+      this.body.setSize(PLAYER_WIDTH, PLAYER_HEIGHT);
+      // Offset the body to align with the visible sprite
+      this.body.setOffset((this.width - PLAYER_WIDTH) / 2, this.height - PLAYER_HEIGHT);
+    }
+
+    this.originalBodyHeight = PLAYER_HEIGHT;
 
     // Set the depth based on the rules
     this.setDepth(Depth.Sprites);
 
     // Set up animation completion listeners
     this.setupAnimationListeners();
+
+    // Store original body height
+    if (this.body) {
+      this.originalBodyHeight = this.body.height;
+    }
 
     // Initialize with idle state
     this.setPlayerState(PlayerState.IDLE);
@@ -110,6 +133,12 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
         this.isAttacking = false;
         this.isDucking = false;
         this.isTalking = false;
+        // Reset body size when going back to idle
+        if (this.body) {
+          this.body.setSize(PLAYER_WIDTH, this.originalBodyHeight);
+          // Maintain proper body offset to align with sprite
+          this.body.setOffset((this.width - PLAYER_WIDTH) / 2, this.height - this.originalBodyHeight);
+        }
         break;
       case PlayerState.WALKING:
         this.play(AnimKeys.Walk, true);
@@ -120,6 +149,13 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
       case PlayerState.DUCKING:
         this.play(AnimKeys.Duck, true);
         this.isDucking = true;
+        // Halve collider height when ducking (as per rules)
+        if (this.body) {
+          const halfHeight = this.originalBodyHeight / 2;
+          this.body.setSize(PLAYER_WIDTH, halfHeight);
+          // Adjust offset to keep feet at same position
+          this.body.setOffset((this.width - PLAYER_WIDTH) / 2, this.height - halfHeight);
+        }
         break;
       case PlayerState.ATTACKING:
         this.play(AnimKeys.Attack, true);
@@ -140,10 +176,16 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   // Action methods
-  walk(direction: "left" | "right", speed: number = 160): void {
-    if (this.isAttacking || !this.isAlive || this.isDucking) return;
+  walk(direction: "left" | "right", speed: number = MAX_SPEED): void {
+    if (this.isAttacking || !this.isAlive || this.isDucking || !this.body) return;
 
-    this.setVelocityX(direction === "left" ? -speed : speed);
+    // Store the direction for use in update
+    this.moveDirection = direction;
+
+    // Set the velocity directly for immediate response
+    const targetVelocity = direction === "left" ? -speed : speed;
+    this.setVelocityX(targetVelocity);
+
     this.setFlipX(direction === "left");
 
     if (this.currentState !== PlayerState.JUMPING) {
@@ -151,11 +193,34 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     }
   }
 
-  jump(jumpVelocity: number = -330): void {
-    if (this.isAttacking || !this.isAlive || this.isDucking || !this.body?.touching.down) return;
+  stopWalking(): void {
+    if (this.isDucking || !this.isAlive) return;
 
-    this.setVelocityY(jumpVelocity);
-    this.setPlayerState(PlayerState.JUMPING);
+    this.moveDirection = "none";
+    this.setAccelerationX(0);
+    this.setVelocityX(0);
+
+    if (this.body?.touching.down && this.currentState !== PlayerState.ATTACKING) {
+      this.setPlayerState(PlayerState.IDLE);
+    }
+  }
+
+  jump(jumpVelocity: number = JUMP_VELOCITY): void {
+    if (this.isAttacking || !this.isAlive || this.isDucking) return;
+
+    // Check if player is on ground for first jump
+    if (this.body?.touching.down) {
+      this.setVelocityY(jumpVelocity);
+      this.canDoubleJump = true;
+      this.setPlayerState(PlayerState.JUMPING);
+    }
+    // Double jump if in air and still has double jump available
+    else if (this.canDoubleJump && this.currentState === PlayerState.JUMPING) {
+      this.setVelocityY(jumpVelocity * 0.8); // Slightly lower second jump
+      this.canDoubleJump = false;
+      // Play jump animation again
+      this.play(AnimKeys.Jump, true);
+    }
   }
 
   attack(): void {
@@ -214,14 +279,43 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
 
   // Update method
   update(time: number, delta: number): void {
+    if (!this.body) return;
+
+    // Apply mid-air steering if the player is trying to move
+    if (this.moveDirection !== "none" && !this.body.touching.down) {
+      // Calculate acceleration based on whether player is on ground or in air
+      const acceleration = GROUND_ACCELERATION * AIR_CONTROL_FACTOR;
+      const targetVelocity = this.moveDirection === "left" ? -MAX_SPEED : MAX_SPEED;
+
+      // Apply acceleration in the right direction
+      this.setAccelerationX(this.moveDirection === "left" ? -acceleration : acceleration);
+
+      // Cap velocity
+      if (
+        (this.moveDirection === "left" && this.body.velocity.x < targetVelocity) ||
+        (this.moveDirection === "right" && this.body.velocity.x > targetVelocity)
+      ) {
+        this.setVelocityX(targetVelocity);
+      }
+    } else {
+      // Reset acceleration each frame when not moving
+      this.setAccelerationX(0);
+    }
+
+    // Reset double jump when landing
+    if (this.body.touching.down && this.currentState === PlayerState.JUMPING) {
+      this.canDoubleJump = true;
+      this.setPlayerState(PlayerState.IDLE);
+    }
+
     // Ensure player goes back to idle if they're on the ground and not moving
-    if (this.body?.touching.down && Math.abs(this.body.velocity.x) < 10 && this.currentState === PlayerState.WALKING) {
+    if (this.body.touching.down && Math.abs(this.body.velocity.x) < 10 && this.currentState === PlayerState.WALKING) {
       this.setPlayerState(PlayerState.IDLE);
     }
 
     // If player is in the air but not in jumping state, force jumping animation
     if (
-      !this.body?.touching.down &&
+      !this.body.touching.down &&
       this.currentState !== PlayerState.JUMPING &&
       this.currentState !== PlayerState.HURT &&
       this.currentState !== PlayerState.DEAD

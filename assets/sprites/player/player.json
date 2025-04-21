@@ -15,7 +15,7 @@
     "trimmed": true,
     "spriteSourceSize": { "x": 0, "y": 10, "w": 42, "h": 54 },
     "sourceSize": { "w": 64, "h": 64 },
-    "duration": 500
+    "duration": 200
    },
    {
     "filename": "player 2.aseprite",
@@ -24,7 +24,7 @@
     "trimmed": true,
     "spriteSourceSize": { "x": 1, "y": 12, "w": 41, "h": 52 },
     "sourceSize": { "w": 64, "h": 64 },
-    "duration": 500
+    "duration": 700
    },
    {
     "filename": "player 3.aseprite",
@@ -33,7 +33,7 @@
     "trimmed": true,
     "spriteSourceSize": { "x": 0, "y": 10, "w": 42, "h": 54 },
     "sourceSize": { "w": 64, "h": 64 },
-    "duration": 500
+    "duration": 200
    },
    {
     "filename": "player 4.aseprite",
@@ -96,7 +96,7 @@
     "trimmed": true,
     "spriteSourceSize": { "x": 22, "y": 0, "w": 34, "h": 64 },
     "sourceSize": { "w": 64, "h": 64 },
-    "duration": 200
+    "duration": 300
    },
    {
     "filename": "player 11.aseprite",
@@ -163,39 +163,39 @@
    },
    {
     "filename": "player 18.aseprite",
-    "frame": { "x": 606, "y": 0, "w": 19, "h": 29 },
+    "frame": { "x": 606, "y": 0, "w": 26, "h": 60 },
     "rotated": false,
     "trimmed": true,
-    "spriteSourceSize": { "x": 24, "y": 19, "w": 19, "h": 29 },
+    "spriteSourceSize": { "x": 14, "y": 4, "w": 26, "h": 60 },
     "sourceSize": { "w": 64, "h": 64 },
     "duration": 500
    },
    {
     "filename": "player 19.aseprite",
-    "frame": { "x": 627, "y": 0, "w": 19, "h": 29 },
+    "frame": { "x": 634, "y": 0, "w": 30, "h": 64 },
     "rotated": false,
     "trimmed": true,
-    "spriteSourceSize": { "x": 24, "y": 19, "w": 19, "h": 29 },
+    "spriteSourceSize": { "x": 20, "y": 0, "w": 30, "h": 64 },
     "sourceSize": { "w": 64, "h": 64 },
     "duration": 500
    },
    {
     "filename": "player 20.aseprite",
-    "frame": { "x": 648, "y": 0, "w": 19, "h": 29 },
+    "frame": { "x": 666, "y": 0, "w": 39, "h": 34 },
     "rotated": false,
     "trimmed": true,
-    "spriteSourceSize": { "x": 24, "y": 19, "w": 19, "h": 29 },
+    "spriteSourceSize": { "x": 0, "y": 30, "w": 39, "h": 34 },
     "sourceSize": { "w": 64, "h": 64 },
-    "duration": 500
+    "duration": 2000
    },
    {
     "filename": "player 21.aseprite",
-    "frame": { "x": 669, "y": 0, "w": 19, "h": 29 },
+    "frame": { "x": 707, "y": 0, "w": 39, "h": 34 },
     "rotated": false,
     "trimmed": true,
-    "spriteSourceSize": { "x": 24, "y": 19, "w": 19, "h": 29 },
+    "spriteSourceSize": { "x": 0, "y": 30, "w": 39, "h": 34 },
     "sourceSize": { "w": 64, "h": 64 },
-    "duration": 500
+    "duration": 200
    }
  ],
  "meta": {
@@ -203,7 +203,7 @@
   "version": "1.3.13-arm64",
   "image": "player.png",
   "format": "RGBA8888",
-  "size": { "w": 688, "h": 64 },
+  "size": { "w": 746, "h": 64 },
   "scale": "1",
   "frameTags": [
    { "name": "idle", "from": 0, "to": 3, "direction": "forward", "color": "#000000ff" },
@@ -212,7 +212,7 @@
    { "name": "hurt", "from": 12, "to": 13, "direction": "forward", "color": "#000000ff" },
    { "name": "die", "from": 14, "to": 15, "direction": "forward", "color": "#000000ff" },
    { "name": "talk", "from": 16, "to": 17, "direction": "forward", "color": "#000000ff" },
-   { "name": "jump", "from": 18, "to": 21, "direction": "forward", "color": "#000000ff" },
+   { "name": "jump", "from": 18, "to": 19, "direction": "forward", "color": "#000000ff" },
    { "name": "duck", "from": 20, "to": 21, "direction": "forward", "color": "#000000ff" }
   ]
  }

@@ -41,8 +41,8 @@ export class PlayerTestScene extends Phaser.Scene {
     this.cursors = this.input.keyboard?.createCursorKeys();
 
     // Set up control keys (following control map from rules)
-    this.jumpKey = this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
-    this.attackKey = this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+    this.jumpKey = this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.J);
+    this.attackKey = this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.K);
     this.duckKey = this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.S);
 
     // Movement keys (A/D as per rule set)
@@ -134,7 +134,7 @@ export class PlayerTestScene extends Phaser.Scene {
     const controlsText = this.add.text(
       10,
       this.cameras.main.height - 160,
-      "Controls:\nA/D: Move left/right\nSPACE: Jump (hold for higher, release for shorter jump)\nDouble-tap SPACE for double jump\nS: Duck\nMouse: Move to aim (not implemented yet)\nClick: Attack",
+      "Controls:\nA/D: Move left/right\nJ: Jump (hold for higher, release for shorter jump)\nDouble-tap J for double jump\nS: Duck\nK: Attack",
       {
         font: "14px Arial",
         color: "#000000",
@@ -210,8 +210,8 @@ export class PlayerTestScene extends Phaser.Scene {
     // Remember jump button state for next frame
     this.jumpWasDown = jumpIsDown;
 
-    // Handle attack with mouse button (as per rule set)
-    if (this.input.activePointer.leftButtonDown() && !this.input.activePointer.leftButtonReleased()) {
+    // Handle attack with K key
+    if (this.attackKey?.isDown) {
       this.player.attack();
     }
 

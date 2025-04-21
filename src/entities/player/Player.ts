@@ -71,6 +71,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
   private lastGroundedTime: number = 0; // Track when we were last grounded
   private coyoteJumpDuration: number = 150; // Allow jump within 150ms of leaving ground
   private canDoubleJump: boolean = false; // Track if double jump is available
+  private isInvincible: boolean = false; // Added for hurt invincibility
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     // Assuming the texture key 'player' is loaded in a Preloader scene
@@ -149,8 +150,15 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
         }
         break;
       case AnimKeys.Hurt:
+        // Delay resetting state after hurt animation completes
         if (this.currentState === PlayerState.HURT && this.isAlive) {
-          this.setPlayerState(PlayerState.IDLE);
+          this.scene.time.delayedCall(100, () => {
+            // Check again if still hurt and alive before resetting
+            if (this.currentState === PlayerState.HURT && this.isAlive) {
+              this.setPlayerState(PlayerState.IDLE);
+            }
+          });
+          // Note: Invincibility timer is handled separately in the collision handler
         }
         break;
       case AnimKeys.Die:
@@ -161,7 +169,11 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
 
   setPlayerState(state: PlayerState): void {
     if (!this.isAlive && state !== PlayerState.DEAD) {
-      return; // Don't change state if player is dead
+      return;
+    }
+
+    if (this.currentState === PlayerState.HURT && state !== PlayerState.DEAD && state !== PlayerState.IDLE) {
+      return;
     }
 
     this.currentState = state;
@@ -202,6 +214,10 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
         break;
       case PlayerState.HURT:
         this.play(AnimKeys.Hurt, true);
+        // Clear movement state when hurt
+        this.moveDirection = "none";
+        this.targetVelocity = 0;
+        this.acceleration = 0;
         break;
       case PlayerState.DEAD:
         this.play(AnimKeys.Die, true);
@@ -216,7 +232,10 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
 
   // Action methods
   walk(direction: "left" | "right", speed: number = MAX_SPEED): void {
-    if (this.isAttacking || !this.isAlive || this.isDucking || !this.body) return;
+    // Prevent action if hurt or attacking
+    if (this.currentState === PlayerState.HURT || this.isAttacking || !this.isAlive || this.isDucking || !this.body) {
+      return;
+    }
 
     // Store the previous direction before changing
     this.previousMoveDirection = this.moveDirection;
@@ -239,7 +258,10 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   stopWalking(): void {
-    if (this.isDucking || !this.isAlive) return;
+    // Prevent action if hurt
+    if (this.currentState === PlayerState.HURT || this.isDucking || !this.isAlive) {
+      return;
+    }
 
     // Store the previous direction before stopping
     this.previousMoveDirection = this.moveDirection;
@@ -259,9 +281,12 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   jump(jumpVelocity: number = JUMP_VELOCITY): void {
-    if (this.isAttacking || !this.isAlive || this.isDucking) return;
+    // Prevent action if hurt or attacking
+    if (this.currentState === PlayerState.HURT || this.isAttacking || !this.isAlive || this.isDucking) {
+      return;
+    }
 
-    const now = this.scene.time.now;
+    const {now} = this.scene.time;
     const canJump =
       this.body?.touching.down || // Currently on ground
       now - this.lastGroundedTime < this.coyoteJumpDuration; // Or within coyote time
@@ -295,8 +320,9 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
       // Apply reduced gravity for ascent
       this.currentGravity = GRAVITY_HOLDING;
 
-      // Ensure we're in jumping state
+      // Ensure we're in jumping state and restart animation
       this.setPlayerState(PlayerState.JUMPING);
+      this.play(AnimKeys.Jump, false); // Restart jump animation from frame 0
     }
   }
 
@@ -318,26 +344,41 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   attack(): void {
-    if (this.isAttacking || !this.isAlive) return;
+    // Prevent action if hurt
+    if (this.currentState === PlayerState.HURT || this.isAttacking || !this.isAlive) {
+      return;
+    }
 
     this.setPlayerState(PlayerState.ATTACKING);
   }
 
   duck(): void {
-    if (this.isAttacking || !this.isAlive || !this.body?.touching.down) return;
+    // Prevent action if hurt or attacking
+    if (this.currentState === PlayerState.HURT || this.isAttacking || !this.isAlive || !this.body?.touching.down) {
+      return;
+    }
 
     this.targetVelocity = 0;
     this.setPlayerState(PlayerState.DUCKING);
   }
 
   standUp(): void {
+    // Prevent action if hurt or not ducking
+    if (this.currentState === PlayerState.HURT || !this.isDucking) {
+      return;
+    }
+
+    // Only stand up if actually ducking
     if (this.isDucking) {
       this.setPlayerState(PlayerState.IDLE);
     }
   }
 
   hurt(): void {
-    if (!this.isAlive) return;
+    // Allow setting hurt state even if already hurt (e.g., for re-triggering)
+    if (!this.isAlive) {
+      return;
+    }
 
     this.setPlayerState(PlayerState.HURT);
   }
@@ -347,7 +388,9 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   talk(): void {
-    if (!this.isAlive) return;
+    if (!this.isAlive) {
+      return;
+    }
 
     this.setPlayerState(PlayerState.TALKING);
   }
@@ -373,7 +416,9 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
 
   // Update method
   update(time: number, delta: number): void {
-    if (!this.body) return;
+    if (!this.body) {
+      return;
+    }
 
     const deltaSeconds = delta / 1000; // Convert delta to seconds for physics calculations
     const isInAir = !this.body.touching.down;
@@ -418,12 +463,8 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     }
 
     // Track when player transitions from ground to air
-    if (!this.wasInAir && isInAir) {
-      // Just became airborne - preserve momentum
-      if (this.moveDirection === "none" && this.previousMoveDirection !== "none") {
-        // If player just released keys as they jumped, preserve their direction
-        this.targetVelocity = this.body.velocity.x;
-      }
+    if (!this.wasInAir && isInAir && this.moveDirection === "none" && this.previousMoveDirection !== "none") {
+      this.targetVelocity = this.body.velocity.x;
     }
 
     // Apply acceleration and friction for smoother movement
@@ -493,9 +534,9 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
       !this.body.touching.down && // in air
       Math.abs(this.body.velocity.y) > 50 && // increased threshold for more stable state changes
       this.currentState !== PlayerState.JUMPING && // not already in jump state
-      this.currentState !== PlayerState.HURT && // not hurt
+      this.currentState !== PlayerState.HURT && // <<<<< ADDED: not hurt
       this.currentState !== PlayerState.DEAD && // not dead
-      this.currentState !== PlayerState.ATTACKING // <<< ADDED: Don't switch if attacking
+      this.currentState !== PlayerState.ATTACKING // Don't switch if attacking
     ) {
       this.setPlayerState(PlayerState.JUMPING);
       // Don't enable double jump when entering jump state from falling
@@ -506,5 +547,33 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
 
     // Update wasInAir state for next frame
     this.wasInAir = isInAir;
+  }
+
+  // Added method to manage invincibility separately from state
+  makeInvincible(duration: number): void {
+    this.isInvincible = true;
+    // Optional: Add visual feedback like blinking
+    // this.scene.tweens.add({
+    //   targets: this,
+    //   alpha: 0.5,
+    //   duration: duration / 6, // Adjust blinking speed
+    //   yoyo: true,
+    //   repeat: 3 // Number of blinks
+    // });
+    this.scene.time.delayedCall(duration, () => {
+      this.isInvincible = false;
+      // Optional: Ensure alpha is reset if blinking was used
+      // this.setAlpha(1);
+    });
+  }
+
+  // Added getter for invincibility state
+  getIsInvincible(): boolean {
+    return this.isInvincible;
+  }
+
+  // Added getter for current state
+  getPlayerState(): PlayerState {
+    return this.currentState;
   }
 }

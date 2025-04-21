@@ -114,7 +114,7 @@
     "trimmed": true,
     "spriteSourceSize": { "x": 23, "y": 11, "w": 27, "h": 53 },
     "sourceSize": { "w": 64, "h": 64 },
-    "duration": 500
+    "duration": 200
    },
    {
     "filename": "player 13.aseprite",

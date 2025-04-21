@@ -81,7 +81,7 @@ export class PlayerTestScene extends Phaser.Scene {
     this.rightKey = this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.D);
 
     // Create debugging UI
-    this.createDebugUI();
+    // this.createDebugUI();
   }
 
   private createPlatforms(): Phaser.Physics.Arcade.StaticGroup {
@@ -259,16 +259,30 @@ export class PlayerTestScene extends Phaser.Scene {
 
   // Updated method to handle spike collision with a StaticGroup sprite
   private handleSpikeCollision(
-    player: Phaser.Types.Physics.Arcade.GameObjectWithBody,
-    spike: Phaser.Types.Physics.Arcade.GameObjectWithBody
+    playerGO: any, // Use 'any' to satisfy the collider callback type for now
+    spikeGO: any // Use 'any' to satisfy the collider callback type for now
   ) {
-    // No need to check tile.index here, collision is with the specific group
-    console.log("Player hit a spike!");
-    // TODO: Implement player damage or scene restart here
-    if (this.player && this.player.body) {
+    if (!(playerGO instanceof Player)) {
+      return;
+    }
+    const player = playerGO as Player; // Cast for easier access
+
+    // *** Invincibility Check ***
+    if (player.getIsInvincible()) {
+      return; // Player is invincible, ignore this collision
+    }
+
+    // Check if player is already hurt (should be redundant now but safe)
+    if (player.getPlayerState() === PlayerState.HURT) {
+      return;
+    }
+
+    if (player.body) {
       // Make player bounce back slightly
-      this.player.setVelocityY(-200); // Bounce up
-      this.player.setVelocityX(this.player.body.velocity.x > 0 ? -100 : 100); // Bounce away horizontally
+      player.setVelocityY(-200); // Bounce up
+      player.setVelocityX(player.body.velocity.x > 0 ? -200 : 200); // Bounce away
+      player.setPlayerState(PlayerState.HURT); // Set player state to hurt
+      player.makeInvincible(1000); // Make player invincible for 500ms
     }
   }
 }

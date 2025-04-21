@@ -14,12 +14,12 @@
     },
     "homepage": "https://github.com/phaserjs/template-vite-ts#readme",
     "scripts": {
-        "dev": "node log.js dev & vite --config vite/config.dev.mjs",
+        "dev": "npm-run-all --parallel watch:sheets vite:dev",
         "build": "node log.js build & vite build --config vite/config.prod.mjs",
+        "vite:dev": "vite --config vite/config.dev.mjs",
         "dev-nolog": "vite --config vite/config.dev.mjs",
         "build-nolog": "vite build --config vite/config.prod.mjs",
-        "watch:sheets": "node scripts/watch-sheets.mjs",
-        "start": "npm-run-all --parallel watch:sheets dev"
+        "watch:sheets": "node scripts/watch-sheets.mjs"
     },
     "devDependencies": {
         "chokidar": "^4.0.3",

@@ -314,7 +314,6 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
   duck(): void {
     if (this.isAttacking || !this.isAlive || !this.body?.touching.down) return;
 
-    this.setVelocityX(0);
     this.targetVelocity = 0;
     this.setPlayerState(PlayerState.DUCKING);
   }

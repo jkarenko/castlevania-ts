@@ -20,12 +20,12 @@ const FLAGS = [
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const GLOBS = [
     `${ROOT}/assets/sprites/player/player.aseprite`,
-    `${ROOT}/assets/sprites/tiles/tiles.aseprite`
+    // `${ROOT}/assets/sprites/tiles/tiles.aseprite` // Removed, handled by watch-tiles.mjs
 ];
 
 
-console.log(`🔎  Watching ${GLOBS.length} patterns …`);
-chokidar.watch(GLOBS, {
+console.log(`🔎  Watching ${GLOBS.filter(g => !g.startsWith('//')).length} animation pattern(s) …`);
+chokidar.watch(GLOBS.filter(g => !g.startsWith('//')), {
     ignoreInitial: false,
     awaitWriteFinish: {
         stabilityThreshold: 200,
@@ -34,8 +34,8 @@ chokidar.watch(GLOBS, {
 })
     .on('add', file => exportSheet(file, 'added'))
     .on('change', file => exportSheet(file, 'changed'))
-    .on('unlink', file => console.log('🗑️  removed', file))
-    .on('all', (event, file) => console.log('[DEBUG]', event, file));
+    .on('unlink', file => console.log('🗑️  removed sheet', file))
+    .on('all', (event, file) => console.log('[SHEETS DEBUG]', event, file));
 
 function exportSheet(file, evt) {
     const dir = path.dirname(file);
@@ -46,5 +46,5 @@ function exportSheet(file, evt) {
     const cmd = [ASEPRITE, '-b', file, '--sheet', png, '--data', json, ...FLAGS];
     console.log(`🎨  ${evt}: ${file} → sheet`);
     spawn(cmd[0], cmd.slice(1), { stdio: 'inherit' })
-        .on('error', e => console.error('⚠️  Aseprite error:', e.message));
+        .on('error', e => console.error('⚠️  Aseprite sheet error:', e.message));
 }

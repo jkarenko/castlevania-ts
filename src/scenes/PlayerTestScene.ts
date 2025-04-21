@@ -11,12 +11,20 @@ export class PlayerTestScene extends Phaser.Scene {
   private rightKey?: Phaser.Input.Keyboard.Key;
   private debugText?: Phaser.GameObjects.Text;
   private jumpWasDown: boolean = false;
+  private spikeGroup?: Phaser.Physics.Arcade.StaticGroup;
 
   constructor() {
     super("PlayerTestScene");
   }
 
-  preload() {}
+  preload() {
+    // Load tileset assets as spritesheet and json
+    this.load.spritesheet("tiles_spritesheet", "assets/sprites/tiles/tiles.png", {
+      frameWidth: 16,
+      frameHeight: 16,
+    });
+    this.load.json("tiles_json", "assets/sprites/tiles/tiles.json"); // Load the json hash data
+  }
 
   create() {
     // Create a background
@@ -28,6 +36,25 @@ export class PlayerTestScene extends Phaser.Scene {
     // Create platforms first so player can be positioned on them
     const platforms = this.createPlatforms();
 
+    // --- Create Spikes using Spritesheet and Static Group ---
+    this.spikeGroup = this.physics.add.staticGroup();
+    const groundLevelY = this.cameras.main.height - 20; // Top of the ground platform
+    const spikeY = groundLevelY - 8; // Position spikes slightly above ground (center of 16px tile)
+
+    // Place some spikes (using frame 0 from the spritesheet)
+    const spikePositions = [
+      {x: 10 * 16 + 8, y: spikeY},
+      {x: 11 * 16 + 8, y: spikeY},
+      {x: 25 * 16 + 8, y: spikeY},
+      {x: 26 * 16 + 8, y: spikeY},
+    ];
+
+    spikePositions.forEach((pos) => {
+      // Using frame 0, assuming it's the first (and maybe only) tile in the sheet
+      this.spikeGroup?.create(pos.x, pos.y, "tiles_spritesheet", 0);
+    });
+    // --- End Spike Creation ---
+
     // Create player - position exactly on ground
     const groundY = this.cameras.main.height - 20; // The top of the ground platform
     this.player = new Player(this, this.cameras.main.width / 2, groundY);
@@ -35,6 +62,10 @@ export class PlayerTestScene extends Phaser.Scene {
     // Add collider between player and platforms
     if (this.player) {
       this.physics.add.collider(this.player, platforms);
+      // Add collider between player and spikes
+      if (this.spikeGroup) {
+        this.physics.add.collider(this.player, this.spikeGroup, this.handleSpikeCollision, undefined, this);
+      }
     }
 
     // Set up input
@@ -224,5 +255,20 @@ export class PlayerTestScene extends Phaser.Scene {
 
     // Let the player update its own state
     this.player.update(time, delta);
+  }
+
+  // Updated method to handle spike collision with a StaticGroup sprite
+  private handleSpikeCollision(
+    player: Phaser.Types.Physics.Arcade.GameObjectWithBody,
+    spike: Phaser.Types.Physics.Arcade.GameObjectWithBody
+  ) {
+    // No need to check tile.index here, collision is with the specific group
+    console.log("Player hit a spike!");
+    // TODO: Implement player damage or scene restart here
+    if (this.player && this.player.body) {
+      // Make player bounce back slightly
+      this.player.setVelocityY(-200); // Bounce up
+      this.player.setVelocityX(this.player.body.velocity.x > 0 ? -100 : 100); // Bounce away horizontally
+    }
   }
 }

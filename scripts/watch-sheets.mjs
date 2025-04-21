@@ -18,10 +18,14 @@ const FLAGS = [
 
 // WATCHER
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
-const GLOB = `${ROOT}/assets/sprites/player/player.aseprite`;
+const GLOBS = [
+    `${ROOT}/assets/sprites/player/player.aseprite`,
+    `${ROOT}/assets/sprites/tiles/tiles.aseprite`
+];
 
-console.log(`🔎  Watching ${GLOB} …`);
-chokidar.watch(GLOB, {
+
+console.log(`🔎  Watching ${GLOBS.length} patterns …`);
+chokidar.watch(GLOBS, {
     ignoreInitial: false,
     awaitWriteFinish: {
         stabilityThreshold: 200,

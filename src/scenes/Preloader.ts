@@ -1,4 +1,5 @@
 import {Scene} from "phaser";
+import {AnimKeys} from "../entities/player/Player";
 
 export class Preloader extends Scene {
   constructor() {
@@ -52,7 +53,7 @@ export class Preloader extends Scene {
         if (frames.length > 0) {
           // For the idle animation with different frame durations (500, 500, 2000),
           // we need special handling
-          if (tag.name === "idle") {
+          if (tag.name === AnimKeys.Idle) {
             // For idle, we need to expand frames to match durations
             // Create an expanded array that repeats frames based on their duration ratios
             const expandedFrames = [];
@@ -75,24 +76,63 @@ export class Preloader extends Scene {
               key: tag.name,
               frames: expandedFrames,
               frameRate: 10, // 10fps = 100ms per frame
-              repeat: -1,
+              repeat: -1, // Idle should loop indefinitely
             });
 
-            console.log(`Created ${tag.name} animation with ${frames.length} unique frames`);
+            console.log(`Created ${tag.name} animation with ${frames.length} unique frames (expanded)`);
           } else {
+            // Animation-specific configurations
+            let repeat = 0; // Default to no repeat
+            let yoyo = false;
+
+            // Configure specific animations
+            switch (tag.name) {
+              case AnimKeys.Walk:
+                repeat = -1; // Infinite loop for walking
+                break;
+              case AnimKeys.Jump:
+                // Jump should play once and hold on last frame
+                repeat = 0;
+                break;
+              case AnimKeys.Attack:
+                // Attack should play once
+                repeat = 0;
+                break;
+              case AnimKeys.Hurt:
+                // Hurt should play once
+                repeat = 0;
+                break;
+              case AnimKeys.Die:
+                // Die should play once and stay on last frame
+                repeat = 0;
+                break;
+              case AnimKeys.Talk:
+                // Talk can repeat while talking
+                repeat = -1;
+                break;
+              case AnimKeys.Duck:
+                // Duck should play once and hold
+                repeat = 0;
+                break;
+            }
+
             // For other animations with consistent frame durations, use standard approach
             this.anims.create({
               key: tag.name,
               frames: frames,
               // Calculate frameRate from frame duration: framerate = 1000 / duration (for 500ms = 2fps)
               frameRate: 1000 / frames[0].duration,
-              repeat: tag.name === "walk" ? -1 : 0,
+              repeat: repeat,
+              yoyo: yoyo,
             });
 
-            console.log(`Created ${tag.name} animation with ${frames.length} frames`);
+            console.log(`Created ${tag.name} animation with ${frames.length} frames (repeat: ${repeat})`);
           }
         }
       });
+
+      // Animation events are now handled in the Player class
+      console.log("Animation setup complete. Animation events are handled in the Player class.");
     } else {
       console.error("Failed to load Aseprite animation data");
     }

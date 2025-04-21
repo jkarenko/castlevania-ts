@@ -1,151 +1,126 @@
-# Phaser Vite TypeScript Template
+### Castlevania‑Style Metroidvania – Project Rules & Specs  
 
-This is a Phaser 3 project template that uses Vite for bundling. It supports hot-reloading for quick development workflow, includes TypeScript support and scripts to generate production-ready builds.
+---
 
-**[This Template is also available as a JavaScript version.](https://github.com/phaserjs/template-vite)**
+#### 1. Core Concept  
+| Item | Spec |
+|------|------|
+| **Genre** | 2‑D side‑scrolling *Metroidvania* (exploration, back‑tracking, statically‑scrolling rooms). |
+| **Visual Style** | Pixel‑art, baseline cell **32 × 32 px**; sprite‑sheets exported from Aseprite with *rows = tags* layout (JSON‑array). |
+| **Core Hook** | **Free‑aim combat** – player uses mouse/right‑stick/touch‑stick to set attack direction (0–360°). |
 
-### Versions
+---
 
-This template has been updated for:
+#### 2. Player Abilities & Control Map  
 
-- [Phaser 3.88.2](https://github.com/phaserjs/phaser)
-- [Vite 5.3.1](https://github.com/vitejs/vite)
-- [TypeScript 5.4.5](https://github.com/microsoft/TypeScript)
+| Action | Keyboard | Game‑pad | Touch |
+|--------|----------|----------|-------|
+| **Move left / right** | A / D | Left‑stick X | Virtual D‑Pad L/R |
+| **Jump / double‑jump** | Space | South (A/✕) | Button A |
+| **Aim** | Mouse pos | Right‑stick | Virtual stick |
+| **Fire / swing** | Left‑click | Right‑trigger (R2/RT) | Button B |
+| **Duck / Hide** | S / ↓ | D‑Pad ↓ | Swipe‑down |
+| **Door / Stairs** | W / ↑ | D‑Pad ↑ | Tap door icon |
+| **Pause / Inventory** | Esc | Start | HUD button |
 
-![screenshot](screenshot.png)
+Movement quirks  
+* Jump has **modest mid‑air steering** (30 % of ground acceleration).  
+* Ducking halves collider height; if standing in front of a “hidable” object, player *becomes untargetable* while ducked.  
+* Attacks inherit aim angle **at the moment of firing**; player can move while charging.  
 
-## Requirements
+---
 
-[Node.js](https://nodejs.org) is required to install dependencies and run scripts via `npm`.
+#### 3. Combat Rules  
 
-## Available Commands
+* **Weapons**  
+  * **Projectiles** (arrows, bolts) – pooled via `rexBullet`; speed 400 px/s; recycle on collision or after 2 s.  
+  * **Melee** (whip / sword) – rectangular hit‑box spawned for 0.15 s, rotated to aim angle.  
+  * **Hit‑scan Spells** – raycast every 16 px; first solid enemy takes damage, particles spawned along path.  
+* **Damage & Invulnerability**: Player/enemies flash for 0.6 s; during flash ignore further hits.  
+* **Knock‑back**: Fixed 120 px opposite to hit direction, eased (quadratic out).  
 
-| Command | Description |
-|---------|-------------|
-| `npm install` | Install project dependencies |
-| `npm run dev` | Launch a development web server |
-| `npm run build` | Create a production build in the `dist` folder |
-| `npm run dev-nolog` | Launch a development web server without sending anonymous data (see "About log.js" below) |
-| `npm run build-nolog` | Create a production build in the `dist` folder without sending anonymous data (see "About log.js" below) |
+---
 
-## Writing Code
+#### 4. Enemy Archetypes  
 
-After cloning the repo, run `npm install` from your project directory. Then, you can start the local development server by running `npm run dev`.
+| Type | Behaviour | Pathfinding | Sample Plugin |
+|------|-----------|-------------|---------------|
+| **Patroller** | Walk L↔R, shoot in current direction every 2 s. | None | `rexFSM` |
+| **Chaser** | Seek player when in aggro radius; idle otherwise. | **A\*** on `rexBoard` grid OR `phaser‑navmesh`. |
+| **Turret** | Static, rotates to aim at player, fires burst of 3. | None | — |
 
-The local development server runs on `http://localhost:8080` by default. Please see the Vite documentation if you wish to change this, or add SSL support.
+All enemies use Arcade Physics AABB bodies.
 
-Once the server is running you can edit any of the files in the `src` folder. Vite will automatically recompile your code and then reload the browser.
+---
 
-## Template Project Structure
+#### 5. Level & World Structure  
 
-We have provided a default project structure to get you started. This is as follows:
+* **Room‑based scrolling** (camera clamps to room bounds; transition with `rexTransition` curtain).  
+* **Non‑linear castle**: keys, abilities or items open shortcuts; back‑tracking encouraged.  
+* **Towns / Shops**: safe rooms; open NLP dialogue boxes (`rexTextTyping`), buy items via `rexUI` list.  
+* Normalised world scale: **1 tile = 32 px**, **player = 1 × 2 tiles**.
 
-- `index.html` - A basic HTML page to contain the game.
-- `src` - Contains the game source code.
-- `src/main.ts` - The main **entry** point. This contains the game configuration and starts the game.
-- `src/vite-env.d.ts` - Global TypeScript declarations, provide types information.
-- `src/scenes/` - The Phaser Scenes are in this folder.
-- `public/style.css` - Some simple CSS rules to help with page layout.
-- `public/assets` - Contains the static assets used by the game.
+---
 
-## Handling Assets
+#### 6. Technical Stack  
 
-Vite supports loading assets via JavaScript module `import` statements.
+| Layer | Choice | Notes |
+|-------|--------|-------|
+| **Engine** | Phaser 3 ≥ 3.88 | Arcade Physics primary; Matter enabled per‑scene if needed. |
+| **Language** | **TypeScript** strict mode. |
+| **Bundler** | Vite with HMR (template‑vite‑ts). |
+| **Live asset pipeline** | `watch-sheets.mjs` (Chokidar) → Aseprite CLI → Vite HMR → Texture.replace. |
+| **Plugins** | `phaser3-rex-plugins` (Bullet, FSM, UI, VirtualJoystick, Board, PathFinder, Transition), `phaser‑navmesh`, `phaser3-weapon`. |
+| **Save / Load** | LocalStorage JSON `{scene,x,y,hp,inventory}`. |
+| **Target FPS** | 60 on mid‑range mobile ‑> limit draw‑calls, batch sprites. |
 
-This template provides support for both embedding assets and also loading them from a static folder. To embed an asset, you can import it at the top of the JavaScript file you are using it in:
+---
 
-```js
-import logoImg from './assets/logo.png'
+#### 7. Code Architecture Conventions  
+
+```ts
+// folder layout
+src/
+  scenes/Boot.ts
+  scenes/<RoomName>.ts
+  entities/player/Player.ts
+  entities/enemies/<Type>.ts
+  systems/bullets.ts
+  data/levels/<room>.json      // Tiled export
+
+// naming
+enum AnimKeys { Idle='idle', Walk='walk', Attack='attack' }
+const enum Depth { BG=-10, Sprites=0, HUD=100 }
 ```
 
-To load static files such as audio files, videos, etc place them into the `public/assets` folder. Then you can use this path in the Loader calls within Phaser:
+* **One class per entity type**; no inheritance tree—use composition + helper functions.  
+* All Phaser GameObjects are wrapped in thin model classes exposing `update(dt)`.
 
-```js
-preload ()
-{
-    //  This is an example of an imported bundled image.
-    //  Remember to import it at the top of this file
-    this.load.image('logo', logoImg);
+---
 
-    //  This is an example of loading a static image
-    //  from the public/assets folder:
-    this.load.image('background', 'assets/bg.png');
-}
-```
+#### 8. Asset Rules  
 
-When you issue the `npm run build` command, all static assets are automatically copied to the `dist/assets` folder.
+* **Sprite‑sheet** per entity; exported **PNG + JSON‑array**.  
+* Tags map to animations (`idle`, `walk`, `attack`, `duck`, etc.).  
+* Padding 2 px, trimmed, rows = tags.  
+* Filenames: `player.png`, `player.json`; watcher auto‑syncs.  
 
-## Deploying to Production
+---
 
-After you run the `npm run build` command, your code will be built into a single bundle and saved to the `dist` folder, along with any other assets your project imported, or stored in the public assets folder.
+#### 9. Performance & QA Targets  
 
-In order to deploy your game, you will need to upload *all* of the contents of the `dist` folder to a public facing web server.
+* < 4 ms JS update on desktop, < 10 ms on iPhone 11.  
+* No single texture > 2048 × 2048.  
+* Memory budget ≤ 200 MB heap after 30 min play‑time.  
+* All rooms reachable with only keyboard + mouse OR full game‑pad OR touch controls.  
 
-## Customizing the Template
+---
 
-### Vite
+#### 10. Stretch Goals (do NOT implement unless scope expanded)  
 
-If you want to customize your build, such as adding plugin (i.e. for loading CSS or fonts), you can modify the `vite/config.*.mjs` file for cross-project changes, or you can modify and/or create new configuration files and target them in specific npm tasks inside of `package.json`. Please see the [Vite documentation](https://vitejs.dev/) for more information.
+* Parallax backgrounds using multi‑cam.  
+* Equipment system (gear stats).  
+* Procedural sub‑dungeons.  
+* Online leaderboards.
 
-## About log.js
-
-If you inspect our node scripts you will see there is a file called `log.js`. This file makes a single silent API call to a domain called `gryzor.co`. This domain is owned by Phaser Studio Inc. The domain name is a homage to one of our favorite retro games.
-
-We send the following 3 pieces of data to this API: The name of the template being used (vue, react, etc). If the build was 'dev' or 'prod' and finally the version of Phaser being used.
-
-At no point is any personal data collected or sent. We don't know about your project files, device, browser or anything else. Feel free to inspect the `log.js` file to confirm this.
-
-Why do we do this? Because being open source means we have no visible metrics about which of our templates are being used. We work hard to maintain a large and diverse set of templates for Phaser developers and this is our small anonymous way to determine if that work is actually paying off, or not. In short, it helps us ensure we're building the tools for you.
-
-However, if you don't want to send any data, you can use these commands instead:
-
-Dev:
-
-```bash
-npm run dev-nolog
-```
-
-Build:
-
-```bash
-npm run build-nolog
-```
-
-Or, to disable the log entirely, simply delete the file `log.js` and remove the call to it in the `scripts` section of `package.json`:
-
-Before:
-
-```json
-"scripts": {
-    "dev": "node log.js dev & dev-template-script",
-    "build": "node log.js build & build-template-script"
-},
-```
-
-After:
-
-```json
-"scripts": {
-    "dev": "dev-template-script",
-    "build": "build-template-script"
-},
-```
-
-Either of these will stop `log.js` from running. If you do decide to do this, please could you at least join our Discord and tell us which template you're using! Or send us a quick email. Either will be super-helpful, thank you.
-
-## Join the Phaser Community!
-
-We love to see what developers like you create with Phaser! It really motivates us to keep improving. So please join our community and show-off your work 😄
-
-**Visit:** The [Phaser website](https://phaser.io) and follow on [Phaser Twitter](https://twitter.com/phaser_)<br />
-**Play:** Some of the amazing games [#madewithphaser](https://twitter.com/search?q=%23madewithphaser&src=typed_query&f=live)<br />
-**Learn:** [API Docs](https://newdocs.phaser.io), [Support Forum](https://phaser.discourse.group/) and [StackOverflow](https://stackoverflow.com/questions/tagged/phaser-framework)<br />
-**Discord:** Join us on [Discord](https://discord.gg/phaser)<br />
-**Code:** 2000+ [Examples](https://labs.phaser.io)<br />
-**Read:** The [Phaser World](https://phaser.io/community/newsletter) Newsletter<br />
-
-Created by [Phaser Studio](mailto:support@phaser.io). Powered by coffee, anime, pixels and love.
-
-The Phaser logo and characters are &copy; 2011 - 2024 Phaser Studio Inc.
-
-All rights reserved.
+---

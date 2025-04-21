@@ -43,10 +43,10 @@ export class PlayerTestScene extends Phaser.Scene {
 
     // Place some spikes (using frame 0 from the spritesheet)
     const spikePositions = [
-      {x: 10 * 16 + 8, y: spikeY},
-      {x: 11 * 16 + 8, y: spikeY},
-      {x: 25 * 16 + 8, y: spikeY},
-      {x: 26 * 16 + 8, y: spikeY},
+      {x: 10 * 16 + 8, y: spikeY + 3},
+      {x: 11 * 16 + 8, y: spikeY + 3},
+      {x: 25 * 16 + 8, y: spikeY + 3},
+      {x: 26 * 16 + 8, y: spikeY + 3},
     ];
 
     spikePositions.forEach((pos) => {
@@ -81,7 +81,7 @@ export class PlayerTestScene extends Phaser.Scene {
     this.rightKey = this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.D);
 
     // Create debugging UI
-    // this.createDebugUI();
+    this.createDebugUI();
   }
 
   private createPlatforms(): Phaser.Physics.Arcade.StaticGroup {
@@ -209,7 +209,7 @@ export class PlayerTestScene extends Phaser.Scene {
     });
 
     // Draw physics debug
-    this.physics.world.createDebugGraphic();
+    // this.physics.world.createDebugGraphic();
   }
 
   update(time: number, delta: number) {
